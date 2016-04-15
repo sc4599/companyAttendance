@@ -1,13 +1,16 @@
-from readxml import db
+# coding=utf-8
+from app.attendance.readexcel import db
 
 
-class detail_attendance(db.Model):
+
+class Detail_attendance(db.Model):
     __tablename__ = 'detail_attendance'
-    id = db.Column(primary_key=True)
-    name = db.Column(db.String(64), unique=True)
-    department = db.Column(db.String(128), unique=True)
+    _id = db.Column(db.Integer, primary_key=True, autoincrement=True)
+    gong_hao = db.Column(db.Integer)
+    name = db.Column(db.String(64))
+    department = db.Column(db.String(128))
     month_attendance = db.Column(db.DateTime)
-    ban_ci = db.Column(db.String(64))
+    ban_ci = db.Column(db.String(64), default='正常班')
     attendance_record = db.Column(db.String(64))
     working_hours = db.Column(db.Integer)
     late = db.Column(db.String(64))
@@ -19,30 +22,33 @@ class detail_attendance(db.Model):
     absenteeisma = db.Column(db.String(64))
 
     def __repr__(self):
-        return '<User %r %r %r %r %r %r %r %r>' % \
-               (self.department, self.id, self.name, self.month_attendance, self.late, self.absenteeisma)
+        return '<User %r %r %r %r %r %r >' % \
+               (self.department, self._id, self.name, self.month_attendance, self.late, self.absenteeisma)
 
 
 class User2(db.Model):
     __tablename__ = 'User2'
-    id = db.Column(db.Integer, primary_key=True)
+
+    _id = db.Column(db.Integer, primary_key=True, autoincrement=True)
+    gong_hao = db.Column(db.Integer, unique=True)
     name = db.Column(db.String(64), unique=True)
-    department = db.Column(db.String(128), unique=True)
-    bing_jia = db.Column(db.Integer(64))
-    bu_ka = db.Column(db.Integer(64))
-    gong_chu = db.Column(db.Integer(64))
-    hun_jia = db.Column(db.Integer(64))
-    nian_jia = db.Column(db.Integer(64))
-    pei_chan_jia = db.Column(db.Integer(64))
-    shi_jia = db.Column(db.Integer(64))
-    tiao_xiu = db.Column(db.Integer(64))
-    late_count = db.Column(db.Integer(64))
-    backup = db.Column(db.Integer(64))
+    department = db.Column(db.String(128))
+    bing_jia = db.Column(db.Integer, default=0)
+    bu_ka = db.Column(db.Integer, default=0)
+    gong_chu = db.Column(db.Integer, default=0)
+    hun_jia = db.Column(db.Integer, default=0)
+    nian_jia = db.Column(db.Integer, default=0)
+    pei_chan_jia = db.Column(db.Integer, default=0)
+    shi_jia = db.Column(db.Integer, default=0)
+    tiao_xiu = db.Column(db.Integer, default=0)
+    false_late = db.Column(db.Integer, default=0)
+    real_late = db.Column(db.Integer, default=0)
+    backup = db.Column(db.Integer, default=0)
 
     @property
     def is_full(self):
         if (self.bing_jia + self.bu_ka + self.gong_chu + self.gong_chu + self.hun_jia + self.nian_jia +
-                self.pei_chan_jia + self.shi_jia + self.tiao_xiu + self.late_count + self.late_count) > 0:
+                self.pei_chan_jia + self.shi_jia + self.tiao_xiu + self.false_late + self.real_late) > 0:
             return False
         else:
             return True
@@ -53,3 +59,7 @@ class User2(db.Model):
             return 100
         else:
             return 0
+
+    @property
+    def late_counts(self):
+        return self.real_late + self.false_late

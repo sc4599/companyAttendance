@@ -1,0 +1,14 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>down</title>
+</head>
+<body>
+{% if filename %}
+    <a href="../static/generate/{{ filename }}.csv">{{ filename }}</a>
+{% else %}
+    <a href="../static/generate/lenmonLOGO.png">filename</a>
+{% endif %}
+</body>
+</html>

@@ -1,81 +1,14 @@
 # coding:utf-8
 
 
-import xlrd
-from flask import Flask
-from flask.ext.sqlalchemy import SQLAlchemy
-import config
+from app import db
+from app.models import Detail_attendance, User2
 import xlrd
 import datetime
 
-app = Flask(__name__)
-app.config['SQLALCHEMY_DATABASE_URI'] = config.DB_URI
-db = SQLAlchemy(app)
 
-
-class Detail_attendance(db.Model):
-    __tablename__ = 'detail_attendance'
-    _id = db.Column(db.Integer, primary_key=True, autoincrement=True)
-    gong_hao = db.Column(db.Integer)
-    name = db.Column(db.String(64))
-    department = db.Column(db.String(128))
-    month_attendance = db.Column(db.DateTime)
-    ban_ci = db.Column(db.String(64), default='正常班')
-    attendance_record = db.Column(db.String(64))
-    working_hours = db.Column(db.Integer)
-    late = db.Column(db.String(64))
-    leave_early = db.Column(db.String(64))
-    add_working = db.Column(db.String(64))
-    field_personnel = db.Column(db.String(64))
-    vacation = db.Column(db.String(64))
-    tiao_xiu = db.Column(db.String(64))
-    absenteeisma = db.Column(db.String(64))
-
-    def __repr__(self):
-        return '<User %r %r %r %r %r %r >' % \
-               (self.department, self._id, self.name, self.month_attendance, self.late, self.absenteeisma)
-
-
-class User2(db.Model):
-    __tablename__ = 'User2'
-
-    _id = db.Column(db.Integer, primary_key=True, autoincrement=True)
-    gong_hao = db.Column(db.Integer, unique=True)
-    name = db.Column(db.String(64), unique=True)
-    department = db.Column(db.String(128))
-    bing_jia = db.Column(db.Integer, default=0)
-    bu_ka = db.Column(db.Integer, default=0)
-    gong_chu = db.Column(db.Integer, default=0)
-    hun_jia = db.Column(db.Integer, default=0)
-    nian_jia = db.Column(db.Integer, default=0)
-    pei_chan_jia = db.Column(db.Integer, default=0)
-    shi_jia = db.Column(db.Integer, default=0)
-    tiao_xiu = db.Column(db.Integer, default=0)
-    false_late = db.Column(db.Integer, default=0)
-    real_late = db.Column(db.Integer, default=0)
-    backup = db.Column(db.Integer, default=0)
-
-    @property
-    def is_full(self):
-        if (self.bing_jia + self.bu_ka + self.gong_chu + self.gong_chu + self.hun_jia + self.nian_jia +
-                self.pei_chan_jia + self.shi_jia + self.tiao_xiu + self.false_late + self.real_late) > 0:
-            return False
-        else:
-            return True
-
-    @property
-    def full_bonus(self):
-        if self.is_full:
-            return 100
-        else:
-            return 0
-
-    @property
-    def late_counts(self):
-        return self.real_late + self.false_late
-
-
-xml_data = xlrd.open_workbook('excel/1-31.xls')
+def load_excel(path):
+    return xlrd.open_workbook('excel/1-31.xls')
 
 
 def create_user(user_id=None, name=None, department=None, month_attendance=None, attendance_record=None,
@@ -85,11 +18,12 @@ def create_user(user_id=None, name=None, department=None, month_attendance=None,
 
 
 def get_excel_data_to_mysql(path):
+
     excel_data = xlrd.open_workbook(path)  # 打开指定 excel
     excel_table = excel_data.sheets()[0]
     rows = excel_table.nrows
-    print ('rows = ', rows)
-    print excel_table.row_values(4961)[0]
+    # print ('rows = ', rows)
+    # print excel_table.row_values(4961)[0]
 
     key_list = ['department', 'gong_hao', 'name', 'month_attendance', 'ban_ci', 'attendance_record', 'working_hours',
                 'late', 'leave_early', 'add_working', 'field_personnel', 'vacation', 'tiao_xiu', 'absenteeisma']
@@ -111,8 +45,9 @@ def get_excel_data_to_mysql(path):
             if not value:
                 value = 0
             item[key] = value
-        print item
+        # print item
         tmp.append(item)
+    # print tmp
     # 批量执行插入动作
     db.session.execute(Detail_attendance.__table__.insert(), tmp)
     db.session.commit()
@@ -163,7 +98,7 @@ def from_detail_to_user2():
         if u'婚'.endswith(detail_a.vacation[0]):
             nian_jia_time = int(
                 float(detail_a.vacation[detail_a.vacation.find('(') + 1:detail_a.vacation.find(')')]) * 10)
-            print u.name, 'nian_jia', detail_a.month_attendance, 'time=', nian_jia_time
+            # print u.name, 'nian_jia', detail_a.month_attendance, 'time=', nian_jia_time
             last_nian_jia_time = u.nian_jia
             u.nian_jia = last_nian_jia_time + nian_jia_time
             is_change = True
@@ -172,7 +107,7 @@ def from_detail_to_user2():
         if u'事'.endswith(detail_a.vacation[0]):
             shi_jia_time = int(
                 float(detail_a.vacation[detail_a.vacation.find('(') + 1:detail_a.vacation.find(')')]) * 10)
-            print u.name, 'nian_jia', detail_a.month_attendance, 'time=', shi_jia_time
+            # print u.name, 'nian_jia', detail_a.month_attendance, 'time=', shi_jia_time
             last_shi_jia_time = u.shi_jia
             u.shi_jia = last_shi_jia_time + shi_jia_time
             is_change = True
@@ -181,45 +116,30 @@ def from_detail_to_user2():
         if u'调'.endswith(detail_a.vacation[0]):
             tiao_xiu_time = int(
                 float(detail_a.vacation[detail_a.vacation.find('(') + 1:detail_a.vacation.find(')')]) * 10)
-            print u.name, 'nian_jia', detail_a.month_attendance, 'time=', tiao_xiu_time
+            # print u.name, 'nian_jia', detail_a.month_attendance, 'time=', tiao_xiu_time
             last_tiao_xiu_time = u.tiao_xiu
             u.tiao_xiu = last_tiao_xiu_time + tiao_xiu_time
             is_change = True
 
         attendance_record = detail_a.attendance_record.split(' ')
-        if len(attendance_record) is 2:
+
+        if detail_a.late == 0:
+            continue
+        if not attendance_record[0].split('-')[0].startswith("xx"):
             # 上下班全部打卡的
             morning = attendance_record[0].split("-")[0]
-            afternoon = attendance_record[1].split("-")[1]
             # 迟到判定 (减工时)
-            if is_false_late(str_to_datetime(morning)):
-                # print u.name, 'false_late', morning
-                last_count = u.false_late
-                if detail_a.vacation != '0':
-                    # print u.name, 'false_late', morning, detail_a.vacation
-                    last_count = u.false_late - 1
-                u.false_late = last_count + 1
-                is_change = True
-            if is_real_late(str_to_datetime(morning)):
-                # print u.name, 'real_late', morning, detail_a.month_attendance
-                last_count = u.real_late
-                if detail_a.vacation != '0':
-                    # print u.name, 'real_late', morning, detail_a.vacation
-                    last_count = u.real_late - 1
-                u.real_late = last_count + 1
-                is_change = True
-
-            # 早退判定 (减工时)
-            if is_leave_early(str_to_datetime(afternoon)):
-                pass
-
-        if attendance_record[0].split('-')[0].startswith("xx"):
-            # 早上忘记刷卡的
-            continue
-        else:
-            # 下班忘记刷卡的
-            pass
-
+            if detail_a.late != '0':  # 表示有迟到记录
+                if is_false_late(str_to_datetime(morning)):
+                    print u.name, 'false_late', morning, detail_a.month_attendance
+                    last_count = u.false_late
+                    u.false_late = last_count + 1
+                    is_change = True
+                if is_real_late(str_to_datetime(morning)):
+                    print u.name, 'real_late', morning, detail_a.month_attendance
+                    last_count = u.real_late
+                    u.real_late = last_count + 1
+                    is_change = True
         if is_change:
             db.session.add(u)
             is_change = False
@@ -303,17 +223,17 @@ def test_is_real():
         print is_real_late(str_to_datetime(testtime))
 
 
-def output_cvs():
+def output_cvs(path,name):
     users = list(db.session.query(User2))
     key_list = ','.join([u'姓名', u'设备工号', u'十分钟内迟到', u'十分钟后迟到', u'病假', u'补卡', u'公出', u'婚假', u'年假', u'产假',
-                u'陪产假', u'流产假', u'事假', u'调休', u'是否全勤'])
+                         u'陪产假', u'流产假', u'事假', u'调休', u'是否全勤'])
     tmp = [key_list]
     for u in users:
-        tmp_user = [u.name, str(u.gong_hao), str(u.false_late), str(u.real_late), str(float(u.bing_jia)/10),
-                    str(u.bu_ka), '', str(float(u.hun_jia)/10), str(float(u.nian_jia)/10), '',
-                    '', '', str(float(u.shi_jia)/10), str(float(u.tiao_xiu)/10), u'是' if u.is_full else u'否']
+        tmp_user = [u.name, str(u.gong_hao), str(u.false_late), str(u.real_late), str(float(u.bing_jia) / 10),
+                    str(u.bu_ka), '', str(float(u.hun_jia) / 10), str(float(u.nian_jia) / 10), '',
+                    '', '', str(float(u.shi_jia) / 10), str(float(u.tiao_xiu) / 10), u'是' if u.is_full else u'否']
         tmp.append(','.join(tmp_user))
-    with open('test_cvs.csv', mode='w') as f:
+    with open('%s/%s.csv' % (path,name), mode='w') as f:
         f.write('\n'.join(tmp).encode('gb18030'))
 
 
@@ -331,5 +251,8 @@ if __name__ == '__main__':
     #     print item.vacation[item.vacation.find('(')+1:item.vacation.find(')')]
 
     # test_is_real()
-    output_cvs()
+    # output_cvs('201603')
+
+
+
     pass
